@@ -1,0 +1,8 @@
+services:
+  orpheusmorebetter:
+    image: starkayc/orpheusmorebetter
+    container_name: orpheusmorebetter
+    #command: "-t totp" # For 2FA code
+    volumes:
+      - ./config:/config/.orpheusmorebetter # Directory where your config are stored.
+      - ./data:/data # Directory where your source FLACs, transcodes and torrents are stored.
