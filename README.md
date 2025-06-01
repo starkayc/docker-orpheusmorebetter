@@ -43,7 +43,7 @@ If you prefer building the image yourself:
 1. **Download Dockerfile**:
 
 ```bash
-wget https://github.com/starkayc/docker-orpheusmorebetter/blob/main/Dockerfile
+wget https://raw.githubusercontent.com/starkayc/docker-orpheusmorebetter/refs/heads/main/Dockerfile
 ```
 
 2. **Build the image**:
