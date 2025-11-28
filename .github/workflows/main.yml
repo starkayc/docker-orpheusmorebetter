@@ -15,31 +15,43 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
-
-    # Login to Docker Hub
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       with:
-        username: starkayc
-        password: ${{ secrets.DOCKER_TOKEN }}
+        show-progress: false
 
     # Login to GitHub Container Registry
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
+    - name: Login to ghcr.io
+      uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
       with:
         registry: ghcr.io
-        username: starkayc
+        username: ${{ github.actor }}
         password: ${{ secrets.GHCR_TOKEN }}
 
-    - name: Build and push images
-      uses: docker/build-push-action@v5
+    # Login to Docker Hub
+    - name: Login to DockerHub
+      uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+      with:
+        username: ${{ github.actor }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Prepare Environment Outputs
+      shell: sh
+      run: |
+        set -eu
+
+        export VERSION=$(curl --silent "https://raw.githubusercontent.com/walkrflocka/orpheusmorebetter/master/_version.py" | grep -Po '(?<=__version__ = ")[^"]+')
+        
+        echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+    - name: Build and publish Docker image from Dockerfile
+      uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
       with:
         context: .
-        file: ./Dockerfile
-        push: true
+        provenance: true
+        sbom: true
         tags: |
+          starkayc/orpheusmorebetter:${{ env.VERSION }}
+          ghcr.io/starkayc/orpheusmorebetter:${{ env.VERSION }}
           starkayc/orpheusmorebetter:latest
           ghcr.io/starkayc/orpheusmorebetter:latest
-        no-cache: true
-        pull: true
+        push: true
