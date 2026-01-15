@@ -49,7 +49,7 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Prepare Environment Outputs
-      shell: sh
+      shell: bash
       run: |
         set -euo pipefail
 
