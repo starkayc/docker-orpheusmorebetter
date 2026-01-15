@@ -1,32 +1,53 @@
-# Set the base image
-FROM python:3.13-alpine3.22
+# Base image (builder)
+FROM python:3.13-alpine3.23 AS builder
 
 LABEL maintainer="StarKayC"
 
-# Update System, Install packages & Clone Repo
-RUN apk update && \
-    apk add git mktorrent flac lame sox && \
-    git clone https://github.com/walkrflocka/orpheusmorebetter /app
+# For reproducible builds, pin OMB_REF to a tag or commit.
+ARG OMB_REPO_URL="https://github.com/walkrflocka/orpheusmorebetter"
+ARG OMB_REF="master"
 
-# Create User, Create Folders, Set Permissions
-RUN adduser -D orpheus && \
-    mkdir /config /data && \
-    chown orpheus:orpheus -R /app /config /data
+# Fetch source and build Python deps in a venv
+RUN apk add --no-cache --virtual .fetch-deps git \
+    && git clone --depth 1 --branch "${OMB_REF}" --single-branch "${OMB_REPO_URL}" /app \
+    && rm -rf /app/.git /app/.github /app/tests \
+    && rm -f /app/.gitignore /app/README.md /app/LICENSE \
+    && python -m venv /venv \
+    && /venv/bin/pip install --no-cache-dir -r /app/requirements.txt \
+    && apk del .fetch-deps
 
-# Set User
-USER orpheus
+# Runtime image
+FROM python:3.13-alpine3.23
 
-# Set Home Folder, Timezone, Hostname
+# Runtime defaults (override in compose if needed)
 ENV HOME=/config \
     TZ=Etc/UTC \
-    HOSTNAME=orpheusmorebetter
+    HOSTNAME=orpheusmorebetter \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/venv/bin:$PATH"
 
-# Set the working directory
-WORKDIR /app
+# Install runtime packages
+RUN apk add --no-cache \
+        mktorrent \
+        flac \
+        lame \
+        sox
 
-# Install pip packages
-RUN pip install -r requirements.txt
+# Create user and writable folders
+RUN adduser -D -h /config orpheus \
+    && mkdir -p /app /config /data \
+    && chown -R orpheus:orpheus /config /data
 
-# Have EntryPoint run app using command option
+COPY --from=builder --chown=orpheus:orpheus /app /app
+COPY --from=builder --chown=orpheus:orpheus /venv /venv
+
+# Workdir set to writable config dir for relative writes
+WORKDIR /config
+
+# Run as non-root
+USER orpheus
+
+# Entrypoint runs the app; args come from CMD/compose
 ENTRYPOINT ["/app/orpheusmorebetter"]
 CMD []

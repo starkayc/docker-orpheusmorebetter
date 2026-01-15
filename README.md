@@ -1,6 +1,6 @@
 # Orpheusmorebetter Docker
 
-A Dockerized version of [Orpheusmorebetter](https://github.com/walkrflocka/orpheusmorebetter), built on [python3.13-alpine3.22](https://hub.docker.com/_/python/tags?name=3.13-alpine3.22) image.
+A Dockerized version of [Orpheusmorebetter](https://github.com/walkrflocka/orpheusmorebetter), built on [python3.13-alpine3.23](https://hub.docker.com/_/python/tags?name=3.13-alpine3.23) image.
 
 📦 Available on [Docker Hub](https://hub.docker.com/r/starkayc/orpheusmorebetter) and [GHCR](https://ghcr.io/starkayc/orpheusmorebetter).
 
@@ -134,7 +134,26 @@ a prompt will appear. The default is '0' which ignores these occurrences.
  `source` is the source flag to add to created torrents. Leave blank if you are
  running `mktorrent` 1.0.
 
+To transcode and upload a specific release:
+
+- Make sure the source FLAC is already in your `data_dir`.
+- If your URL contains `&`, either escape it (`\&`) or wrap the URL in quotes.
+
+```bash
+# Full URL (escaped ampersand)
+orpheusmorebetter https://orpheus.network/torrents.php?id=1000\&torrentid=1000000#torrent1000000
+orpheusmorebetter https://orpheus.network/torrents.php?id=1000\&torrentid=1000000
+
+# Query-only form (escaped ampersand)
+orpheusmorebetter ?id=1000\&torrentid=1000000
+
+# Quoted URL (no escaping needed)
+orpheusmorebetter "https://orpheus.network/torrents.php?id=1000&torrentid=1000000#torrent1000000"
+orpheusmorebetter "https://orpheus.network/torrents.php?id=1000&torrentid=1000000"
+orpheusmorebetter "?id=1000&torrentid=1000000"
+```
+
 ## 📎 Resources
 
-- Base Image: [python3.13-alpine3.22](https://hub.docker.com/_/python/tags?name=3.13-alpine3.22)  
+- Base Image: [python3.13-alpine3.23](https://hub.docker.com/_/python/tags?name=3.13-alpine3.23)  
 - Orpheusmorebetter: [walkrflocka/orpheusmorebetter](https://github.com/walkrflocka/orpheusmorebetter)

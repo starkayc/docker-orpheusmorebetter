@@ -9,18 +9,29 @@ on:
       - "Dockerfile"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-orpheusmorebetter-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       with:
         show-progress: false
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
 
     # Login to GitHub Container Registry
     - name: Login to ghcr.io
@@ -40,10 +51,17 @@ jobs:
     - name: Prepare Environment Outputs
       shell: sh
       run: |
-        set -eu
+        set -euo pipefail
 
-        export VERSION=$(curl --silent "https://raw.githubusercontent.com/walkrflocka/orpheusmorebetter/master/_version.py" | grep -Po '(?<=__version__ = ")[^"]+')
-        
+        VERSION="$(curl --fail --silent --show-error --retry 3 --retry-delay 2 \
+          "https://raw.githubusercontent.com/walkrflocka/orpheusmorebetter/master/_version.py" \
+          | grep -Po '(?<=__version__ = ")[^"]+')"
+
+        if [ -z "${VERSION}" ]; then
+          echo "ERROR: VERSION could not be parsed from _version.py" >&2
+          exit 1
+        fi
+
         echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
     - name: Build and publish Docker image from Dockerfile
@@ -52,6 +70,9 @@ jobs:
         context: .
         provenance: true
         sbom: true
+        platforms: linux/amd64,linux/arm64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         tags: |
           starkayc/orpheusmorebetter:${{ env.VERSION }}
           ghcr.io/starkayc/orpheusmorebetter:${{ env.VERSION }}
